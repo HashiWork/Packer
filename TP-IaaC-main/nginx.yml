@@ -1,0 +1,35 @@
+---
+- name: Installation de Nginx sur Amazon Linux 2023
+  hosts: frontend
+  become: yes
+  tasks:
+
+  - name: Mettre à jour les paquets système
+    dnf:
+      name: '*'
+      state: latest
+
+  - name: Installer Nginx
+    dnf:
+      name: nginx
+      state: present
+
+  - name: Démarrer et activer Nginx
+    systemd:
+      name: nginx
+      state: started
+      enabled: true
+
+  - name: Vérifier l'état de Nginx
+    command: systemctl status nginx
+
+  - name: Installer iptables si nécessaire
+    dnf:
+      name: iptables-services
+      state: present
+
+  - name: Autoriser le trafic HTTP via iptables
+    command: iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+
+  - name: Sauvegarder la configuration iptables
+    command: service iptables save

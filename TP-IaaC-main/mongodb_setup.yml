@@ -1,0 +1,39 @@
+---
+- name: Installation de MongoDB 8.0 sur Amazon Linux 2023
+  hosts: database
+  become: yes
+  tasks:
+
+  - name: Supprimer les anciennes installations de MongoDB
+    dnf:
+      name: mongodb-org
+      state: absent
+    ignore_errors: yes
+
+  - name: Ajouter le dépôt MongoDB 8.0
+    ansible.builtin.copy:
+      dest: /etc/yum.repos.d/mongodb-org-8.0.repo
+      content: |
+        [mongodb-org-8.0]
+        name=MongoDB Repository
+        baseurl=https://repo.mongodb.org/yum/amazon/2023/mongodb-org/8.0/x86_64/
+        gpgcheck=1
+        enabled=1
+        gpgkey=https://pgp.mongodb.com/server-8.0.asc
+
+  - name: Nettoyer le cache Yum
+    command: dnf clean all
+
+  - name: Recharger le cache Yum
+    command: dnf makecache --refresh
+
+  - name: Installer MongoDB
+    dnf:
+      name: mongodb-org
+      state: present
+
+  - name: Démarrer et activer MongoDB
+    systemd:
+      name: mongod
+      state: started
+      enabled: true

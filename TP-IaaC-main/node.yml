@@ -1,0 +1,24 @@
+---
+- name: Installation de Node.js 22.14.0 sur Amazon Linux 2023
+  hosts: backend
+  become: yes
+  tasks:
+
+  - name: Ajouter le dépôt NodeSource
+    get_url:
+      url: https://rpm.nodesource.com/setup_22.x
+      dest: /tmp/setup_node.sh
+
+  - name: Exécuter le script de configuration NodeSource
+    command: bash /tmp/setup_node.sh
+
+  - name: Installer Node.js
+    dnf:
+      name: nodejs
+      state: present
+
+  - name: Vérifier l'installation de Node.js
+    command: node -v
+
+  - name: Vérifier l'installation de npm
+    command: npm -v
