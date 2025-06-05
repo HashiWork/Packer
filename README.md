@@ -1,108 +1,90 @@
-# 🐧 Génération automatisée d’un Template Debian 12 avec Packer & Proxmox
-
-Ce projet a pour objectif de créer un **template Debian 12** entièrement automatisé pour une plateforme **Proxmox VE**, en utilisant **Packer** et un fichier **Preseed**. Ce template permet d’accélérer les déploiements de VM homogènes et prêtes à l’emploi.
 
 ---
 
-## 📝 Description
-
-Ce TP met en œuvre :
-
-* **Packer** en syntaxe HCL2 pour décrire une image de machine Debian 12
-* Une **installation non-interactive** de Debian via un fichier `preseed.cfg`
-* Le déploiement sur un **hyperviseur Proxmox** via le plugin `proxmox-iso`
-* L’utilisation de variables pour une configuration flexible et sécurisée
-
-Le résultat est une **VM Debian 12 prête à être convertie en template**, avec :
-
-* Un utilisateur `mco` avec droits sudo sans mot de passe
-* L’agent QEMU installé pour intégration avec Proxmox
-* Une configuration clavier/langue FR et partitionnement LVM automatique
-
----
-
-## 🎯 Objectifs pédagogiques / techniques
-
-* [x] Automatiser le déploiement d’une VM avec Packer
-* [x] Créer un template Debian 12 propre et minimal
-* [x] Utiliser Preseed pour automatiser l’installation
-* [x] Gérer la configuration réseau, disque, CPU, mémoire, utilisateur SSH…
-* [x] Respecter les bonnes pratiques de configuration système
-
----
-
-## 🧰 Technologies utilisées
-
-| Outil             | Description                             |
-| ----------------- | --------------------------------------- |
-| **Packer**        | Génération d'image VM automatisée       |
-| **Proxmox VE**    | Hyperviseur de virtualisation cible     |
-| **Debian 12 ISO** | OS à installer                          |
-| **Preseed**       | Automatisation de l’installation Debian |
-
----
-
-## 🗂️ Arborescence du projet
-
-```bash
-.
-├── debian12.pkr.hcl            # Configuration Packer (builder, variables, disques, réseau)
-├── customdeb12.pkrvars.hcl     # Valeurs spécifiques à ton environnement Proxmox
-├── preseed.cfg                 # Script d'installation Debian automatisée (langue, user, sudo, disques)
-└── README.md
-```
-
----
-
-## 🔍 Description des fichiers
+## 📁 Détails des fichiers
 
 ### `debian12.pkr.hcl`
 
-Ce fichier est le **fichier principal de configuration Packer**. Il contient :
+Ce fichier contient :
 
-* Le bloc `packer.required_plugins` pour déclarer le plugin `proxmox`
-* Toutes les **variables déclarées** (BIOS, disque, réseau, utilisateur, stockage…)
-* Le bloc `source "proxmox-iso"` qui décrit la **configuration du build** Proxmox
-
-  * Types de disque (scsi, raw, 20G)
-  * CPU (`nb_core`, `nb_cpu`), RAM (`nb_ram`)
-  * Réseau virtio sur `vmbr0`
-  * ISO fourni par le stockage `local:iso`
-  * Activation de l’agent QEMU
-  * Utilisation du fichier `preseed.cfg` via `boot_command`
-* Le bloc `build` pour exécuter ce source
+- La déclaration du plugin `proxmox`
+- La définition de toutes les **variables globales** utilisées pour le build
+- Le bloc `source "proxmox-iso"` pour décrire la VM à créer :
+  - ISO Debian
+  - Stockage, CPU, RAM, disque
+  - Agent QEMU, interface réseau VirtIO
+  - Utilisation d’un fichier `preseed.cfg` via le `boot_command`
+  - Accès API au cluster Proxmox
+- Un bloc `build` avec :
+  - L’appel au source
+  - Un bloc `provisioner "shell"` avec tous les paquets à installer en post-install :
+    - Nginx
+    - Docker Engine + CLI + Compose plugin
+    - Node.js (via le dépôt NodeSource)
+    - MongoDB Community Edition 8.0
 
 ### `customdeb12.pkrvars.hcl`
 
-Ce fichier contient les **valeurs concrètes** des variables définies dans `debian12.pkr.hcl` :
+Ce fichier contient les **valeurs spécifiques** à ton environnement Proxmox :
 
-* `api_username` et `api_password` pour accéder à l’API de Proxmox (à ne jamais publier)
-* `ssh_username` et `ssh_password` créés via Preseed (utilisateur mco)
-* `iso_file` vers `local:iso/debian-12amd64.iso`
-* `bios_type = seabios`, `cpu_type = x86-64-v2-AES`, `machine_default_type = q35`
-* `nb_core = 2`, `nb_cpu = 2`, `nb_ram = 4096`, `disk_size = 20G`, `disk_format = raw`
-* `bridge_name = vmbr0`, `network_model = virtio`, `qemu_agent_activation = true`
-* `ssh_timeout = "35m"` pour laisser le temps à Debian de s’installer tranquillement
+- Adresse de l’API, nom du nœud (`proxmox-tuds`)
+- Nom, ID, description de la VM
+- Ressources : CPU, RAM, disque
+- Identifiants de connexion pour SSH et API
+- Paramètres du réseau (bridge, modèle, cloud-init)
+
+> 💡 Ce fichier est **hors du repo GitHub** pour éviter de publier des identifiants sensibles.
 
 ### `preseed.cfg`
 
-Ce fichier permet une **installation silencieuse et complète** de Debian 12 :
+Automatise l’installation de Debian :
 
-* Langue : FR, Clavier : FR-latin9, Fuseau : Europe/Paris
-* Installation via miroir officiel (`deb.debian.org`, sans proxy)
-* Partitionnement LVM automatique sur `/dev/sda`
-* Création de l’utilisateur `mco` avec mot de passe `***`
-* Mot de passe root activé localement (`***`) — à désactiver ensuite en prod
-* Installation de paquets : `openssh-server`, `qemu-guest-agent`, `cloud-init`, `sudo`, etc.
-* Activation automatique de `sudo` sans mot de passe pour l’utilisateur `mco`
+- Langue FR, clavier français, fuseau Europe/Paris
+- Miroir Debian sans proxy
+- LVM automatique sans chiffrement
+- Utilisateur `mco` avec droits sudo sans mot de passe
+- Installation de base : `openssh-server`, `sudo`, `cloud-init`, `qemu-guest-agent`
+- Activation directe du compte root avec mot de passe
+- Ajout du groupe `sudo` à l’utilisateur et création du fichier dans `/etc/sudoers.d/`
 
 ---
 
-## 🚀 Instructions de build
+## 🔧 Provisioning post-install (Packer)
+
+Une fois Debian installé et accessible en SSH, **Packer exécute un script shell** intégré en fin de `debian12.pkr.hcl`. Ce script :
+
+1. Met à jour les paquets
+2. Installe `nginx`
+3. Installe Docker (apt repo officiel)
+4. Installe Node.js (via `deb.nodesource.com`)
+5. Installe MongoDB (via `repo.mongodb.org`)
+
+Le script est exécuté avec `sudo` car l'utilisateur `mco` a les droits nécessaires (donnés via le `preseed.cfg`).
+
+---
+
+## 🚀 Lancer le build
 
 ```bash
+# Initialiser les plugins
 packer init .
+
+# Vérifier la validité de la config
 packer validate -var-file=customdeb12.pkrvars.hcl debian12.pkr.hcl
-packer build -var-file=customdeb12.pkrvars.hcl debian12.pkr.hcl
+
+# Lancer le build complet
+packer build -force -var-file=customdeb12.pkrvars.hcl debian12.pkr.hcl
 ```
-https://www.youtube.com/watch?v=WDG5cT9qA_o
+---
+
+## 📺 Démonstration vidéo (POC)
+
+Tu peux voir l'exécution complète et le résultat de ce TP dans cette vidéo :
+
+▶️ [POC disponible sur YouTube](https://www.youtube.com/watch?v=okomPzQzrWY)
+
+---
+## 👨‍💻 Auteur
+
+TP réalisé par **Samuel S.** dans le cadre d’un projet de virtualisation automatisée sur **Proxmox** avec **Packer** et **Debian 12**.
+
