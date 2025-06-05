@@ -1,10 +1,10 @@
 # Identifiants API Proxmox
 api_username             = "root@pam"
-api_password             = "Passe1?"
+api_password             = "P***"
 
 # Accès SSH à la VM (compte créé dans preseed.cfg)
 ssh_username             = "mco"
-ssh_password             = "mco123"
+ssh_password             = "***"
 
 # Paramètres techniques de la VM
 bios_type                = "seabios"
@@ -26,8 +26,8 @@ nb_ram                   = 4096
 network_model            = "virtio"
 io_thread                = false
 os_type                  = "l26"
-proxmox_api_url          = "https://172.16.10.150:8006/api2/json"
-proxmox_node             = "proxmox-tuds"
+proxmox_api_url          = "https://***:8006/api2/json"
+proxmox_node             = "proxmox"
 qemu_agent_activation    = true
 scsi_controller_type     = "virtio-scsi-pci"
 ssh_handshake_attempts   = 6
