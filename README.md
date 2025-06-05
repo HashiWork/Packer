@@ -105,4 +105,4 @@ packer init .
 packer validate -var-file=customdeb12.pkrvars.hcl debian12.pkr.hcl
 packer build -var-file=customdeb12.pkrvars.hcl debian12.pkr.hcl
 ```
-
+https://www.youtube.com/watch?v=WDG5cT9qA_o
